@@ -1,11 +1,7 @@
-import React from 'react'
+import React from "react";
 
-const CustomButton = () => {
-  return (
-    <div>
-      CustomButton
-    </div>
-  )
-}
+const DisplayCampaigns = () => {
+  return <div>DisplayCampaigns</div>;
+};
 
-export default DisplayCampaigns
+export default DisplayCampaigns;
