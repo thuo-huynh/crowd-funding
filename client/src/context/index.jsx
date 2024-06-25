@@ -3,8 +3,8 @@ import React, { useContext, createContext } from "react";
 import {
   useAddress,
   useContract,
-  useMetamask,
   useContractWrite,
+  useConnect,
 } from "@thirdweb-dev/react";
 import { ethers } from "ethers";
 import { EditionMetadataWithOwnerOutputSchema } from "@thirdweb-dev/sdk";
@@ -13,16 +13,16 @@ const StateContext = createContext();
 
 export const StateContextProvider = ({ children }) => {
   const { contract } = useContract(
-    "0xf59A1f8251864e1c5a6bD64020e3569be27e6AA9"
+    "0x18d4f50e7136fDe6Dfe4007be6f9C2388b6d604e"
   );
+
   const { mutateAsync: createCampaign } = useContractWrite(
     contract,
     "createCampaign"
   );
 
   const address = useAddress();
-  const connect = useMetamask();
-
+  const connect = useConnect();
   const publishCampaign = async (form) => {
     try {
       const data = await createCampaign({
@@ -102,10 +102,10 @@ export const StateContextProvider = ({ children }) => {
         contract,
         connect,
         createCampaign: publishCampaign,
-        getCampaigns,
-        getUserCampaigns,
-        donate,
-        getDonations,
+        // getCampaigns,
+        // getUserCampaigns,
+        // donate,
+        // getDonations
       }}
     >
       {children}

@@ -72,7 +72,7 @@ const Navbar = () => {
           <ul className="mb-4">
             {navlinks.map((navlink) => (
               <li
-                key={navlink.id}
+                key={navlink.name}
                 className={`flex p-4 ${
                   isActive === navlink.name && "bg-[#3a3a43]"
                 }`}
