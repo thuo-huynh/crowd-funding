@@ -13,7 +13,11 @@ import type {
   Signer,
   utils,
 } from "ethers";
-import type { FunctionFragment, Result } from "@ethersproject/abi";
+import type {
+  FunctionFragment,
+  Result,
+  EventFragment,
+} from "@ethersproject/abi";
 import type { Listener, Provider } from "@ethersproject/providers";
 import type {
   TypedEventFilter,
@@ -32,6 +36,8 @@ export declare namespace CrowdFunding {
     deadline: PromiseOrValue<BigNumberish>;
     amountCollected: PromiseOrValue<BigNumberish>;
     image: PromiseOrValue<string>;
+    fundsWithdrawn: PromiseOrValue<boolean>;
+    refunded: PromiseOrValue<boolean>;
     donators: PromiseOrValue<string>[];
     donations: PromiseOrValue<BigNumberish>[];
   };
@@ -44,6 +50,8 @@ export declare namespace CrowdFunding {
     BigNumber,
     BigNumber,
     string,
+    boolean,
+    boolean,
     string[],
     BigNumber[]
   ] & {
@@ -54,6 +62,8 @@ export declare namespace CrowdFunding {
     deadline: BigNumber;
     amountCollected: BigNumber;
     image: string;
+    fundsWithdrawn: boolean;
+    refunded: boolean;
     donators: string[];
     donations: BigNumber[];
   };
@@ -64,10 +74,14 @@ export interface CrowdFundingInterface extends utils.Interface {
     "campaigns(uint256)": FunctionFragment;
     "createCampaign(address,string,string,uint256,uint256,string)": FunctionFragment;
     "donateToCampaign(uint256,uint256)": FunctionFragment;
+    "donations(uint256,address)": FunctionFragment;
+    "getCampaignDetails(uint256)": FunctionFragment;
     "getCampaigns()": FunctionFragment;
     "getDonators(uint256)": FunctionFragment;
     "numberOfCampaigns()": FunctionFragment;
+    "refund(uint256)": FunctionFragment;
     "token()": FunctionFragment;
+    "withdrawFunds(uint256)": FunctionFragment;
   };
 
   getFunction(
@@ -75,10 +89,14 @@ export interface CrowdFundingInterface extends utils.Interface {
       | "campaigns"
       | "createCampaign"
       | "donateToCampaign"
+      | "donations"
+      | "getCampaignDetails"
       | "getCampaigns"
       | "getDonators"
       | "numberOfCampaigns"
+      | "refund"
       | "token"
+      | "withdrawFunds"
   ): FunctionFragment;
 
   encodeFunctionData(
@@ -101,6 +119,14 @@ export interface CrowdFundingInterface extends utils.Interface {
     values: [PromiseOrValue<BigNumberish>, PromiseOrValue<BigNumberish>]
   ): string;
   encodeFunctionData(
+    functionFragment: "donations",
+    values: [PromiseOrValue<BigNumberish>, PromiseOrValue<string>]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getCampaignDetails",
+    values: [PromiseOrValue<BigNumberish>]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getCampaigns",
     values?: undefined
   ): string;
@@ -112,7 +138,15 @@ export interface CrowdFundingInterface extends utils.Interface {
     functionFragment: "numberOfCampaigns",
     values?: undefined
   ): string;
+  encodeFunctionData(
+    functionFragment: "refund",
+    values: [PromiseOrValue<BigNumberish>]
+  ): string;
   encodeFunctionData(functionFragment: "token", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "withdrawFunds",
+    values: [PromiseOrValue<BigNumberish>]
+  ): string;
 
   decodeFunctionResult(functionFragment: "campaigns", data: BytesLike): Result;
   decodeFunctionResult(
@@ -121,6 +155,11 @@ export interface CrowdFundingInterface extends utils.Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "donateToCampaign",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "donations", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "getCampaignDetails",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -135,10 +174,76 @@ export interface CrowdFundingInterface extends utils.Interface {
     functionFragment: "numberOfCampaigns",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "refund", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "token", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "withdrawFunds",
+    data: BytesLike
+  ): Result;
 
-  events: {};
+  events: {
+    "CampaignCreated(uint256,address,string,uint256,uint256)": EventFragment;
+    "DonationReceived(uint256,address,uint256)": EventFragment;
+    "FundsWithdrawn(uint256,address,uint256)": EventFragment;
+    "RefundIssued(uint256,address,uint256)": EventFragment;
+  };
+
+  getEvent(nameOrSignatureOrTopic: "CampaignCreated"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "DonationReceived"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "FundsWithdrawn"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "RefundIssued"): EventFragment;
 }
+
+export interface CampaignCreatedEventObject {
+  campaignId: BigNumber;
+  owner: string;
+  title: string;
+  target: BigNumber;
+  deadline: BigNumber;
+}
+export type CampaignCreatedEvent = TypedEvent<
+  [BigNumber, string, string, BigNumber, BigNumber],
+  CampaignCreatedEventObject
+>;
+
+export type CampaignCreatedEventFilter = TypedEventFilter<CampaignCreatedEvent>;
+
+export interface DonationReceivedEventObject {
+  campaignId: BigNumber;
+  donor: string;
+  amount: BigNumber;
+}
+export type DonationReceivedEvent = TypedEvent<
+  [BigNumber, string, BigNumber],
+  DonationReceivedEventObject
+>;
+
+export type DonationReceivedEventFilter =
+  TypedEventFilter<DonationReceivedEvent>;
+
+export interface FundsWithdrawnEventObject {
+  campaignId: BigNumber;
+  owner: string;
+  amount: BigNumber;
+}
+export type FundsWithdrawnEvent = TypedEvent<
+  [BigNumber, string, BigNumber],
+  FundsWithdrawnEventObject
+>;
+
+export type FundsWithdrawnEventFilter = TypedEventFilter<FundsWithdrawnEvent>;
+
+export interface RefundIssuedEventObject {
+  campaignId: BigNumber;
+  donor: string;
+  amount: BigNumber;
+}
+export type RefundIssuedEvent = TypedEvent<
+  [BigNumber, string, BigNumber],
+  RefundIssuedEventObject
+>;
+
+export type RefundIssuedEventFilter = TypedEventFilter<RefundIssuedEvent>;
 
 export interface CrowdFunding extends BaseContract {
   connect(signerOrProvider: Signer | Provider | string): this;
@@ -171,7 +276,17 @@ export interface CrowdFunding extends BaseContract {
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<
-      [string, string, string, BigNumber, BigNumber, BigNumber, string] & {
+      [
+        string,
+        string,
+        string,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        string,
+        boolean,
+        boolean
+      ] & {
         owner: string;
         title: string;
         description: string;
@@ -179,6 +294,8 @@ export interface CrowdFunding extends BaseContract {
         deadline: BigNumber;
         amountCollected: BigNumber;
         image: string;
+        fundsWithdrawn: boolean;
+        refunded: boolean;
       }
     >;
 
@@ -198,6 +315,39 @@ export interface CrowdFunding extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<ContractTransaction>;
 
+    donations(
+      arg0: PromiseOrValue<BigNumberish>,
+      arg1: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<[BigNumber]>;
+
+    getCampaignDetails(
+      _campaignId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<
+      [
+        string,
+        string,
+        string,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        string,
+        boolean,
+        boolean
+      ] & {
+        owner: string;
+        title: string;
+        description: string;
+        target: BigNumber;
+        deadline: BigNumber;
+        amountCollected: BigNumber;
+        image: string;
+        fundsWithdrawn: boolean;
+        refunded: boolean;
+      }
+    >;
+
     getCampaigns(
       overrides?: CallOverrides
     ): Promise<[CrowdFunding.CampaignStructOutput[]]>;
@@ -209,14 +359,34 @@ export interface CrowdFunding extends BaseContract {
 
     numberOfCampaigns(overrides?: CallOverrides): Promise<[BigNumber]>;
 
+    refund(
+      _campaignId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
+
     token(overrides?: CallOverrides): Promise<[string]>;
+
+    withdrawFunds(
+      _campaignId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<ContractTransaction>;
   };
 
   campaigns(
     arg0: PromiseOrValue<BigNumberish>,
     overrides?: CallOverrides
   ): Promise<
-    [string, string, string, BigNumber, BigNumber, BigNumber, string] & {
+    [
+      string,
+      string,
+      string,
+      BigNumber,
+      BigNumber,
+      BigNumber,
+      string,
+      boolean,
+      boolean
+    ] & {
       owner: string;
       title: string;
       description: string;
@@ -224,6 +394,8 @@ export interface CrowdFunding extends BaseContract {
       deadline: BigNumber;
       amountCollected: BigNumber;
       image: string;
+      fundsWithdrawn: boolean;
+      refunded: boolean;
     }
   >;
 
@@ -243,6 +415,39 @@ export interface CrowdFunding extends BaseContract {
     overrides?: Overrides & { from?: PromiseOrValue<string> }
   ): Promise<ContractTransaction>;
 
+  donations(
+    arg0: PromiseOrValue<BigNumberish>,
+    arg1: PromiseOrValue<string>,
+    overrides?: CallOverrides
+  ): Promise<BigNumber>;
+
+  getCampaignDetails(
+    _campaignId: PromiseOrValue<BigNumberish>,
+    overrides?: CallOverrides
+  ): Promise<
+    [
+      string,
+      string,
+      string,
+      BigNumber,
+      BigNumber,
+      BigNumber,
+      string,
+      boolean,
+      boolean
+    ] & {
+      owner: string;
+      title: string;
+      description: string;
+      target: BigNumber;
+      deadline: BigNumber;
+      amountCollected: BigNumber;
+      image: string;
+      fundsWithdrawn: boolean;
+      refunded: boolean;
+    }
+  >;
+
   getCampaigns(
     overrides?: CallOverrides
   ): Promise<CrowdFunding.CampaignStructOutput[]>;
@@ -254,14 +459,34 @@ export interface CrowdFunding extends BaseContract {
 
   numberOfCampaigns(overrides?: CallOverrides): Promise<BigNumber>;
 
+  refund(
+    _campaignId: PromiseOrValue<BigNumberish>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
+
   token(overrides?: CallOverrides): Promise<string>;
+
+  withdrawFunds(
+    _campaignId: PromiseOrValue<BigNumberish>,
+    overrides?: Overrides & { from?: PromiseOrValue<string> }
+  ): Promise<ContractTransaction>;
 
   callStatic: {
     campaigns(
       arg0: PromiseOrValue<BigNumberish>,
       overrides?: CallOverrides
     ): Promise<
-      [string, string, string, BigNumber, BigNumber, BigNumber, string] & {
+      [
+        string,
+        string,
+        string,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        string,
+        boolean,
+        boolean
+      ] & {
         owner: string;
         title: string;
         description: string;
@@ -269,6 +494,8 @@ export interface CrowdFunding extends BaseContract {
         deadline: BigNumber;
         amountCollected: BigNumber;
         image: string;
+        fundsWithdrawn: boolean;
+        refunded: boolean;
       }
     >;
 
@@ -288,6 +515,39 @@ export interface CrowdFunding extends BaseContract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    donations(
+      arg0: PromiseOrValue<BigNumberish>,
+      arg1: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    getCampaignDetails(
+      _campaignId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<
+      [
+        string,
+        string,
+        string,
+        BigNumber,
+        BigNumber,
+        BigNumber,
+        string,
+        boolean,
+        boolean
+      ] & {
+        owner: string;
+        title: string;
+        description: string;
+        target: BigNumber;
+        deadline: BigNumber;
+        amountCollected: BigNumber;
+        image: string;
+        fundsWithdrawn: boolean;
+        refunded: boolean;
+      }
+    >;
+
     getCampaigns(
       overrides?: CallOverrides
     ): Promise<CrowdFunding.CampaignStructOutput[]>;
@@ -299,10 +559,68 @@ export interface CrowdFunding extends BaseContract {
 
     numberOfCampaigns(overrides?: CallOverrides): Promise<BigNumber>;
 
+    refund(
+      _campaignId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<void>;
+
     token(overrides?: CallOverrides): Promise<string>;
+
+    withdrawFunds(
+      _campaignId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<void>;
   };
 
-  filters: {};
+  filters: {
+    "CampaignCreated(uint256,address,string,uint256,uint256)"(
+      campaignId?: PromiseOrValue<BigNumberish> | null,
+      owner?: PromiseOrValue<string> | null,
+      title?: null,
+      target?: null,
+      deadline?: null
+    ): CampaignCreatedEventFilter;
+    CampaignCreated(
+      campaignId?: PromiseOrValue<BigNumberish> | null,
+      owner?: PromiseOrValue<string> | null,
+      title?: null,
+      target?: null,
+      deadline?: null
+    ): CampaignCreatedEventFilter;
+
+    "DonationReceived(uint256,address,uint256)"(
+      campaignId?: PromiseOrValue<BigNumberish> | null,
+      donor?: PromiseOrValue<string> | null,
+      amount?: null
+    ): DonationReceivedEventFilter;
+    DonationReceived(
+      campaignId?: PromiseOrValue<BigNumberish> | null,
+      donor?: PromiseOrValue<string> | null,
+      amount?: null
+    ): DonationReceivedEventFilter;
+
+    "FundsWithdrawn(uint256,address,uint256)"(
+      campaignId?: PromiseOrValue<BigNumberish> | null,
+      owner?: PromiseOrValue<string> | null,
+      amount?: null
+    ): FundsWithdrawnEventFilter;
+    FundsWithdrawn(
+      campaignId?: PromiseOrValue<BigNumberish> | null,
+      owner?: PromiseOrValue<string> | null,
+      amount?: null
+    ): FundsWithdrawnEventFilter;
+
+    "RefundIssued(uint256,address,uint256)"(
+      campaignId?: PromiseOrValue<BigNumberish> | null,
+      donor?: PromiseOrValue<string> | null,
+      amount?: null
+    ): RefundIssuedEventFilter;
+    RefundIssued(
+      campaignId?: PromiseOrValue<BigNumberish> | null,
+      donor?: PromiseOrValue<string> | null,
+      amount?: null
+    ): RefundIssuedEventFilter;
+  };
 
   estimateGas: {
     campaigns(
@@ -326,6 +644,17 @@ export interface CrowdFunding extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<BigNumber>;
 
+    donations(
+      arg0: PromiseOrValue<BigNumberish>,
+      arg1: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    getCampaignDetails(
+      _campaignId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     getCampaigns(overrides?: CallOverrides): Promise<BigNumber>;
 
     getDonators(
@@ -335,7 +664,17 @@ export interface CrowdFunding extends BaseContract {
 
     numberOfCampaigns(overrides?: CallOverrides): Promise<BigNumber>;
 
+    refund(
+      _campaignId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
+
     token(overrides?: CallOverrides): Promise<BigNumber>;
+
+    withdrawFunds(
+      _campaignId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<BigNumber>;
   };
 
   populateTransaction: {
@@ -360,6 +699,17 @@ export interface CrowdFunding extends BaseContract {
       overrides?: Overrides & { from?: PromiseOrValue<string> }
     ): Promise<PopulatedTransaction>;
 
+    donations(
+      arg0: PromiseOrValue<BigNumberish>,
+      arg1: PromiseOrValue<string>,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    getCampaignDetails(
+      _campaignId: PromiseOrValue<BigNumberish>,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     getCampaigns(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     getDonators(
@@ -369,6 +719,16 @@ export interface CrowdFunding extends BaseContract {
 
     numberOfCampaigns(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    refund(
+      _campaignId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
+
     token(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    withdrawFunds(
+      _campaignId: PromiseOrValue<BigNumberish>,
+      overrides?: Overrides & { from?: PromiseOrValue<string> }
+    ): Promise<PopulatedTransaction>;
   };
 }
