@@ -10,7 +10,7 @@ const config: HardhatUserConfig = {
     },
   },
   typechain: {
-    outDir: "./client/typechain-types",
+    outDir: "./frontend/typechain-types",
   },
 };
 

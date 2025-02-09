@@ -235,4 +235,144 @@ describe("Token contract", function () {
       expect(campaigns[1].title).to.equal("Campaign 2");
     });
   });
+
+  describe("Campaign Details Retrieval", function () {
+    it("Should return the correct campaign details", async function () {
+      const { crowdFunding, addr1 } = await loadFixture(
+        deployCrowdFundingFixture
+      );
+
+      // Create a campaign
+      await crowdFunding.connect(addr1).createCampaign(
+        addr1.address,
+        "Test Campaign",
+        "This is a test campaign description",
+        ethers.utils.parseEther("100"),
+        Math.floor(Date.now() / 1000) + 86400, // Set a deadline 24 hours from now
+        "https://example.com/test.jpg"
+      );
+
+      // Retrieve the details of the campaign created (campaign ID is 0)
+      const campaignDetails = await crowdFunding.getCampaignDetails(0);
+
+      // Assert that the returned values match the expected ones
+      expect(campaignDetails.owner).to.equal(addr1.address);
+      expect(campaignDetails.title).to.equal("Test Campaign");
+      expect(campaignDetails.description).to.equal(
+        "This is a test campaign description"
+      );
+      expect(campaignDetails.target).to.equal(ethers.utils.parseEther("100"));
+      expect(campaignDetails.deadline).to.be.closeTo(
+        Math.floor(Date.now() / 1000) + 86400,
+        10
+      ); // Allow for a small time delta
+      expect(campaignDetails.amountCollected).to.equal(0); // No donations have been made yet
+      expect(campaignDetails.image).to.equal("https://example.com/test.jpg");
+      expect(campaignDetails.fundsWithdrawn).to.equal(false); // No funds have been withdrawn yet
+      expect(campaignDetails.refunded).to.equal(false); // No refunds have been issued yet
+    });
+
+    it("Should revert with an invalid campaign ID", async function () {
+      const { crowdFunding } = await loadFixture(deployCrowdFundingFixture);
+
+      // Attempt to retrieve campaign details for a non-existent campaign ID
+      await expect(crowdFunding.getCampaignDetails(999)).to.be.revertedWith(
+        "Invalid campaign ID"
+      );
+    });
+  });
+
+  describe("Withdraw fund Campaigns", function () {
+    it("Should allow the campaign owner to withdraw funds if the target is met", async function () {
+      const { crowdFunding, token, addr1, addr2 } = await loadFixture(
+        deployCrowdFundingFixture
+      );
+
+      // Create a campaign
+      await crowdFunding
+        .connect(addr1)
+        .createCampaign(
+          addr1.address,
+          "Fundraising",
+          "A test campaign",
+          ethers.utils.parseEther("50"),
+          Math.floor(Date.now() / 1000) + 100,
+          "https://example.com/image.jpg"
+        );
+
+      // Approve and donate to meet the target
+      await token
+        .connect(addr2)
+        .approve(crowdFunding.address, ethers.utils.parseEther("50"));
+
+      await crowdFunding
+        .connect(addr2)
+        .donateToCampaign(0, ethers.utils.parseEther("50"));
+
+      // Fast-forward time to exceed the deadline
+      await network.provider.send("evm_increaseTime", [200]);
+      await network.provider.send("evm_mine");
+
+      // Owner withdraws funds
+      await expect(crowdFunding.connect(addr1).withdrawFunds(0))
+        .to.emit(crowdFunding, "FundsWithdrawn")
+        .withArgs(0, addr1.address, ethers.utils.parseEther("50"));
+
+      // Check funds were withdrawn
+      const campaign = await crowdFunding.campaigns(0);
+      expect(campaign.fundsWithdrawn).to.be.true;
+    });
+  });
+  describe("Refund Campaigns", function () {
+    it("Should allow donors to claim a refund if the campaign failed", async function () {
+      const { crowdFunding, token, addr1, addr2 } = await loadFixture(
+        deployCrowdFundingFixture
+      );
+
+      // Create a campaign
+      await crowdFunding
+        .connect(addr1)
+        .createCampaign(
+          addr1.address,
+          "Failed Campaign",
+          "This campaign won't meet its goal",
+          ethers.utils.parseEther("50"),
+          Math.floor(Date.now() / 1000) + 100,
+          "https://example.com/image.jpg"
+        );
+
+      // Check initial balance of addr2
+      const initialBalance = await token.balanceOf(addr2.address);
+
+      // Approve and donate 20 tokens
+      await token
+        .connect(addr2)
+        .approve(crowdFunding.address, ethers.utils.parseEther("20"));
+
+      await crowdFunding
+        .connect(addr2)
+        .donateToCampaign(0, ethers.utils.parseEther("20"));
+
+      // Fast-forward time past the campaign deadline
+      await network.provider.send("evm_increaseTime", [200]);
+      await network.provider.send("evm_mine");
+
+      // Check balance before refund
+      const balanceBeforeRefund = await token.balanceOf(addr2.address);
+
+      // Execute refund and expect event
+      await expect(crowdFunding.connect(addr2).refund(0))
+        .to.emit(crowdFunding, "RefundIssued")
+        .withArgs(0, addr2.address, ethers.utils.parseEther("20"));
+
+      // Check balance after refund
+      const balanceAfterRefund = await token.balanceOf(addr2.address);
+
+      // Validate balance change
+      expect(balanceBeforeRefund).to.equal(
+        initialBalance.sub(ethers.utils.parseEther("20"))
+      );
+      expect(balanceAfterRefund).to.equal(initialBalance);
+    });
+  });
 });

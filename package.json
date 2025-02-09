@@ -35,6 +35,9 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.7.3"
+    "@openzeppelin/contracts": "^4.7.3",
+    "@thirdweb-dev/react": "^4.9.4",
+    "@thirdweb-dev/sdk": "^4.0.99",
+    "react-icon": "^1.0.0"
   }
 }

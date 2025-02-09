@@ -17,7 +17,6 @@ contract CrowdFunding is ReentrancyGuard {
     event DonationReceived(uint256 indexed campaignId, address indexed donor, uint256 amount);
     event FundsWithdrawn(uint256 indexed campaignId, address indexed owner, uint256 amount);
     event RefundIssued(uint256 indexed campaignId, address indexed donor, uint256 amount);
-
     struct Campaign {
         address owner;
         string title;
